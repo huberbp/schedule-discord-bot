@@ -1,2 +1,2 @@
-# schedule-discord-bot
-Discord bot
+# Schedule!
+A discord bot for enhancing scheduled events.
