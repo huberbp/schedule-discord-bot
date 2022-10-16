@@ -13,14 +13,16 @@ import (
 )
 
 var (
-	BotToken        string
-	logFile         *os.File
-	err             error
-	commandHandlers map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
+	BotToken          string
+	logFile           *os.File
+	err               error
+	commandHandlers   map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
+	messageComponents map[string]discordgo.MessageComponent
 )
 
 func init() {
 	commandHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
+	messageComponents = make(map[string]discordgo.MessageComponent)
 
 	logFile, err = os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
@@ -37,6 +39,33 @@ func init() {
 		return
 	}
 	BotToken = os.Getenv("DISCORD_BOT_AUTH_KEY")
+
+	directories, err := os.ReadDir("static_message_components")
+	if err != nil {
+		fmt.Println("ERROR", err, "- Error reading local message component json.")
+		log.Println("ERROR", err, "- Error reading local message component json.")
+		return
+	}
+
+	for _, directory := range directories {
+		var dirName string = directory.Name()
+
+		componentJSON, err := os.ReadFile("static_message_components/" + dirName)
+		if err != nil {
+			fmt.Println("ERROR", err, "- Error reading local", dirName, "message component.")
+			log.Println("ERROR", err, "- Error reading local", dirName, "message component.")
+			return
+		}
+
+		component, err := discordgo.MessageComponentFromJSON(componentJSON)
+		if err != nil {
+			fmt.Println("ERROR", err, "- Error converting", dirName, "into message component.")
+			log.Println("ERROR", err, "- Error converting", dirName, "into message component.")
+			return
+		}
+
+		messageComponents[dirName] = component
+	}
 }
 
 func main() {
@@ -137,7 +166,14 @@ func schedule(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags:   discordgo.MessageFlagsEphemeral,
-			Content: "Schedule your event!",
+			Content: "Schedule " + i.ApplicationCommandData().Options[0].StringValue(),
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						messageComponents["date_input.json"],
+					},
+				},
+			},
 		},
 	})
 }
