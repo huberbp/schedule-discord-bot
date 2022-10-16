@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -37,11 +39,16 @@ func main() {
 
 	defer discord.Close()
 
-	fmt.Println("Made it this far")
+	fmt.Println("App started:", os.Getpid())
 
-	for true {
-
-	}
+	// Allocate memory for signal handler
+	stop := make(chan os.Signal, 1)
+	// Set up signal handler to handle all possible outcomes
+	signal.Notify(stop, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	// Wait indefinitely for one of these signals (this is blocking)
+	<-stop
+	// Notify user of shutdown
+	fmt.Println("Shut Down")
 }
 
 func trackCreation(s *discordgo.Session, m *discordgo.GuildScheduledEventCreate) {
