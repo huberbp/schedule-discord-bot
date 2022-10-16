@@ -1,0 +1,13 @@
+{
+    "name": "schedule",
+    "type": 1,
+    "description": "Schedule a managed event",
+    "options": [
+        {
+            "name": "event_name",
+            "description": "The name of the event you are about to create",
+            "type": 3,
+            "required": true
+        }
+    ]
+}
