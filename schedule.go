@@ -20,6 +20,8 @@ var (
 )
 
 func init() {
+	commandHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
+
 	logFile, err = os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		fmt.Println("ERROR", err, "- Failed to open log file for log output.")
@@ -83,10 +85,22 @@ func main() {
 			log.Println("ERROR", err, "- Error updating", localApp.Name, "command.")
 			return
 		}
+
+		switch localApp.Name {
+		case "schedule":
+			commandHandlers[localApp.Name] = schedule
+		}
 	}
 
 	// Add handlers (trackCreation is a fointer)
 	discord.AddHandler(trackCreation)
+
+	// Add our interaction handlers (for appCommands)
+	discord.AddHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+		if handler, ok := commandHandlers[interaction.ApplicationCommandData().Name]; ok {
+			handler(session, interaction)
+		}
+	})
 
 	// Setup the intents to send to discord on the initial handshake greeting
 	discord.Identify.Intents = discordgo.IntentsGuildScheduledEvents
@@ -116,4 +130,14 @@ func main() {
 
 func trackCreation(s *discordgo.Session, m *discordgo.GuildScheduledEventCreate) {
 	fmt.Println("Event Created.")
+}
+
+func schedule(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags:   discordgo.MessageFlagsEphemeral,
+			Content: "Schedule your event!",
+		},
+	})
 }
