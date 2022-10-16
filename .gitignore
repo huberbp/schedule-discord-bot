@@ -16,3 +16,6 @@
 
 # Environment Variable files
 *.env
+
+# Logs
+logs.txt
